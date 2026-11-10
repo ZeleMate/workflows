@@ -1,0 +1,8 @@
+# actionlint 1.7.12 does not yet know two newer GitHub features. Remove each line once it does.
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      # job.workflow_* context properties (GitHub Changelog 2026-09-03)
+      - 'property "workflow_(repository|sha)" is not defined in object type'
+      # self-repository `uses: $/...` syntax (GA July 2026)
+      - 'reusable workflow call "\$/'

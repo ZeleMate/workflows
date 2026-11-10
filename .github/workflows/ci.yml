@@ -1,0 +1,59 @@
+name: CI
+
+# Tests this repo with its own reusable workflows where it can: repo-lint runs the
+# pre-commit hooks and checks the merge gate below, and security scans this repo.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  repo-lint:
+    uses: $/.github/workflows/repo-lint.yml
+    permissions:
+      contents: read
+
+  security:
+    uses: $/.github/workflows/security.yml
+    permissions:
+      contents: read
+    with:
+      sast: true
+
+  tools:
+    name: tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - run: uv lock --check --project tools
+      - run: ./scripts/test_check_merge_gate.sh
+
+  # Single required status check. Fails if any job failed or was cancelled.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs:
+      - repo-lint
+      - security
+      - tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          case "$RESULTS" in *failure*|*cancelled*) exit 1 ;; esac

@@ -1,0 +1,58 @@
+name: repo-lint
+
+# Runs the caller's pre-commit hooks and checks its merge gate.
+on:
+  workflow_call:
+    inputs:
+      skip-hooks:
+        description: Comma-separated pre-commit hook ids to skip (hooks that need a language toolchain run in the language workflows).
+        type: string
+        default: gitleaks,prettier,cargo-fmt
+      ci-workflow:
+        description: The caller workflow file whose merge gate is checked.
+        type: string
+        default: .github/workflows/ci.yml
+      merge-gate-job:
+        description: Job id of the merge gate in that file.
+        type: string
+        default: ci-ok
+
+permissions: {}
+
+env:
+  UV_LOCKED: "1"
+
+jobs:
+  repo-lint:
+    name: repo-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # This workflow's own repo at the SHA the caller pinned, for the hash-locked tools.
+      # Moved out of the workspace so scanners and hooks never see it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .central
+          persist-credentials: false
+      - run: mv .central "$RUNNER_TEMP/central"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: pre-commit
+        env:
+          SKIP: ${{ inputs.skip-hooks }}
+        run: uv run --no-build --project "$RUNNER_TEMP/central/tools" pre-commit run --all-files --show-diff-on-failure
+      - name: Every job feeds the merge gate
+        env:
+          CI_WORKFLOW: ${{ inputs.ci-workflow }}
+          MERGE_GATE_JOB: ${{ inputs.merge-gate-job }}
+        run: uv run --no-build --project "$RUNNER_TEMP/central/tools" python "$RUNNER_TEMP/central/scripts/check_merge_gate.py" "$CI_WORKFLOW" "$MERGE_GATE_JOB"

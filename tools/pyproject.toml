@@ -1,0 +1,18 @@
+# Tools the reusable workflows run, locked with hashes in uv.lock next to this file.
+# A workflow checks this repo out at the SHA its caller pinned, so the workflow and
+# its tools always come from one commit. Run with `uv run --no-build --project tools <tool>`.
+[project]
+name = "central-ci-tools"
+version = "0"
+requires-python = ">=3.13"
+dependencies = [
+    "diff-cover>=11.0",
+    "pre-commit>=4.7",
+    "pyyaml>=6.0",
+    "semgrep>=1.181",
+]
+
+[tool.uv]
+package = false
+# 7-day supply-chain cooldown.
+exclude-newer = "7 days"
