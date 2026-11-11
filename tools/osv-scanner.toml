@@ -1,0 +1,30 @@
+# Advisories accepted for the CI tool lock next to this file.
+# Semgrep pins both packages exactly (mcp==1.29.0, opentelemetry-api~=1.37.0), so they
+# cannot be upgraded until Semgrep moves. Neither is reachable here: the workflows only
+# run `semgrep scan`, never Semgrep's MCP server, and nothing in the lock is shipped.
+# Each entry expires, so the scan fails again and the ignore gets re-checked.
+
+[[IgnoredVulns]]
+id = "GHSA-5h93-6whr-6q8j"
+ignoreUntil = 2027-02-10
+reason = "mcp 1.29.0 is pinned by Semgrep; its MCP server is never run in CI"
+
+[[IgnoredVulns]]
+id = "GHSA-84m7-p3x7-pcfv"
+ignoreUntil = 2027-02-10
+reason = "mcp 1.29.0 is pinned by Semgrep; its MCP server is never run in CI"
+
+[[IgnoredVulns]]
+id = "GHSA-rwrf-2pqf-9j8j"
+ignoreUntil = 2027-02-10
+reason = "mcp 1.29.0 is pinned by Semgrep; its MCP server is never run in CI"
+
+[[IgnoredVulns]]
+id = "GHSA-w4fh-qvv9-3v23"
+ignoreUntil = 2027-02-10
+reason = "mcp 1.29.0 is pinned by Semgrep; its MCP server is never run in CI"
+
+[[IgnoredVulns]]
+id = "GHSA-xcq7-p3pf-p88h"
+ignoreUntil = 2027-02-10
+reason = "opentelemetry-api 1.37 is pinned by Semgrep; used only for its own telemetry, which runs with --metrics off"
