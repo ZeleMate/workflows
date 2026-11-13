@@ -1,7 +1,8 @@
 name: CI
 
-# Tests this repo with its own reusable workflows where it can: repo-lint runs the
-# pre-commit hooks and checks the merge gate below, and security scans this repo.
+# Tests this repo with its own reusable workflows: repo-lint runs the pre-commit hooks and
+# checks the merge gate below, security scans this repo, and each language workflow runs
+# on a fixture project in tests/fixtures/ rendered from the repo template.
 on:
   pull_request:
   push:
@@ -26,6 +27,29 @@ jobs:
     with:
       sast: true
 
+  python:
+    uses: $/.github/workflows/python.yml
+    permissions:
+      contents: read
+    with:
+      python-versions: '["3.13", "3.14"]'
+      working-directory: tests/fixtures/python
+
+  typescript:
+    uses: $/.github/workflows/typescript.yml
+    permissions:
+      contents: read
+    with:
+      node-version: "26"
+      working-directory: tests/fixtures/typescript
+
+  rust:
+    uses: $/.github/workflows/rust.yml
+    permissions:
+      contents: read
+    with:
+      working-directory: tests/fixtures/rust
+
   tools:
     name: tools
     runs-on: ubuntu-latest
@@ -47,6 +71,9 @@ jobs:
     needs:
       - repo-lint
       - security
+      - python
+      - typescript
+      - rust
       - tools
     runs-on: ubuntu-latest
     timeout-minutes: 5
