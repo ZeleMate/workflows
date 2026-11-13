@@ -45,6 +45,10 @@ Keep one merge gate job in the caller (`ci-ok` by default) that `needs` every ot
 
 Semgrep, diff-cover and pre-commit are locked with hashes in `tools/uv.lock`. A workflow that needs them checks this repo out at the SHA the caller pinned (`job.workflow_sha`), so a workflow and its tools always come from one commit. Actions are pinned to commit SHAs. Gitleaks and OSV-Scanner are downloaded by version and verified against a checksum.
 
+## Testing
+
+This repo's own CI calls every workflow: `repo-lint` and `security` on this repo, and `python`, `typescript` and `rust` on the fixture projects in `tests/fixtures/`, which are renders of the repo template. An action bump or tool change here is therefore tested before it is released.
+
 ## Releases
 
 Tags are semver. A release is major when it removes or renames an input, adds a required input, or can turn a green caller red without an edit to the caller: a stricter default rule, a raised minimum version, a new check that is on by default.
