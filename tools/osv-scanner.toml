@@ -28,3 +28,8 @@ reason = "mcp 1.29.0 is pinned by Semgrep; its MCP server is never run in CI"
 id = "GHSA-xcq7-p3pf-p88h"
 ignoreUntil = 2027-02-10
 reason = "opentelemetry-api 1.37 is pinned by Semgrep; used only for its own telemetry, which runs with --metrics off"
+
+[[IgnoredVulns]]
+id = "GHSA-mf5v-w3w3-f6cg"
+ignoreUntil = 2027-02-10
+reason = "opentelemetry-api 1.37 is pinned by Semgrep; the ReDoS is in traceparent extraction from untrusted carriers, which semgrep scan never does"
