@@ -32,7 +32,8 @@ jobs:
     permissions:
       contents: read
     with:
-      python-versions: '["3.13", "3.14"]'
+      # Starts below the central tools' Python (3.13), as callers may.
+      python-versions: '["3.12", "3.13", "3.14"]'
       working-directory: tests/fixtures/python
 
   typescript:
