@@ -71,4 +71,6 @@ jobs:
         if: github.event_name == 'pull_request' && matrix.python == fromJSON(inputs.python-versions)[0]
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: uv run --no-build --project "$RUNNER_TEMP/central/tools" diff-cover coverage.xml --compare-branch="origin/${BASE_REF}" --fail-under=90
+        # --python: the tools need their own Python (tools/.python-version), not the matrix
+        # one that setup-uv exported as UV_PYTHON, which may be older than tools allow.
+        run: uv run --no-build --python "$(cat "$RUNNER_TEMP/central/tools/.python-version")" --project "$RUNNER_TEMP/central/tools" diff-cover coverage.xml --compare-branch="origin/${BASE_REF}" --fail-under=90
