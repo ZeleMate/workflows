@@ -6,10 +6,10 @@ name = "central-ci-tools"
 version = "0"
 requires-python = ">=3.13"
 dependencies = [
-    "diff-cover>=11.0",
+    "diff-cover>=11.0.1",
     "pre-commit>=4.7",
     "pyyaml>=6.0",
-    "semgrep>=1.181",
+    "semgrep>=1.184.0",
 ]
 
 [tool.uv]
