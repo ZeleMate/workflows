@@ -12,6 +12,18 @@ updates:
     commit-message:
       prefix: fix
 
+  - package-ecosystem: gomod
+    directory: /tools/go
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      tools:
+        patterns: ["*"]
+    commit-message:
+      prefix: fix
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

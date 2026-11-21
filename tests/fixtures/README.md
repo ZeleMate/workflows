@@ -1,6 +1,6 @@
 # Fixture projects
 
-Each folder is the language project from a render of [repo-template](https://github.com/ZeleMate/repo-template), so CI runs `python.yml`, `typescript.yml` and `rust.yml` against the same files a generated repo has. They are test inputs, not code to maintain.
+Each folder is the language project from a render of [repo-template](https://github.com/ZeleMate/repo-template), so CI runs `python.yml`, `typescript.yml`, `rust.yml` and `go.yml` against the same files a generated repo has. They are test inputs, not code to maintain.
 
 To refresh one after a template release, render the template with that single language and copy the project files over:
 
@@ -10,5 +10,7 @@ uvx copier copy --trust --defaults -d project_name=Fixture -d author_name=Fixtur
   -d license=MIT -d 'languages=["rust"]' -d agentic=false -d publishes=false \
   gh:ZeleMate/repo-template /tmp/fixture-rust
 ```
+
+The Go fixture has no dependencies, so no `go.sum`.
 
 `Cargo.lock` comes from `cargo generate-lockfile` (in a `rust` container if cargo isn't installed).

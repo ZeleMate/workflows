@@ -7,7 +7,7 @@ on:
       skip-hooks:
         description: Comma-separated pre-commit hook ids to skip (hooks that need a language toolchain run in the language workflows).
         type: string
-        default: gitleaks,prettier,cargo-fmt
+        default: gitleaks,prettier,cargo-fmt,golangci-lint-fmt
       ci-workflow:
         description: The caller workflow file whose merge gate is checked.
         type: string
