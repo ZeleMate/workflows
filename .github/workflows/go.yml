@@ -70,7 +70,7 @@ jobs:
           echo "newest=$([ "$newest" = "$MATRIX_GO" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - name: Install golangci-lint (checksum-verified)
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/golangci-lint.tgz" "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$RUNNER_TEMP/golangci-lint.tgz" "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz"
           echo "${GOLANGCI_LINT_SHA256}  $RUNNER_TEMP/golangci-lint.tgz" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/bin"
           tar -xzf "$RUNNER_TEMP/golangci-lint.tgz" -C "$RUNNER_TEMP/bin" --strip-components=1 "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint"
