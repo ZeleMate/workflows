@@ -1,7 +1,7 @@
 # Advisories accepted for the CI tool lock next to this file.
-# Semgrep pins both packages exactly (mcp==1.29.0, opentelemetry-api~=1.37.0), so they
-# cannot be upgraded until Semgrep moves. Neither is reachable here: the workflows only
-# run `semgrep scan`, never Semgrep's MCP server, and nothing in the lock is shipped.
+# Semgrep pins these packages (mcp==1.29.0, opentelemetry-api~=1.37.0, wcmatch~=8.3), so
+# they cannot be upgraded until Semgrep moves. The workflows only run `semgrep scan`, never
+# Semgrep's MCP server or client, and nothing in the lock is shipped.
 # Each entry expires, so the scan fails again and the ignore gets re-checked.
 
 [[IgnoredVulns]]
@@ -23,6 +23,16 @@ reason = "mcp 1.29.0 is pinned by Semgrep; its MCP server is never run in CI"
 id = "GHSA-w4fh-qvv9-3v23"
 ignoreUntil = 2027-02-10
 reason = "mcp 1.29.0 is pinned by Semgrep; its MCP server is never run in CI"
+
+[[IgnoredVulns]]
+id = "GHSA-qx49-fqc8-xw99"
+ignoreUntil = 2027-02-10
+reason = "mcp 1.29.0 is pinned by Semgrep; the flaw is in its OAuth client (mcp.client.auth), which semgrep scan never runs"
+
+[[IgnoredVulns]]
+id = "GHSA-53pm-wgxf-c6qf"
+ignoreUntil = 2027-02-10
+reason = "wcmatch 8.5.2 is pinned by Semgrep (~=8.3; fixed in 11.2); a crafted file name in a scanned repo can slow its path globs, and the worst case is a CI job hitting its timeout"
 
 [[IgnoredVulns]]
 id = "GHSA-xcq7-p3pf-p88h"
