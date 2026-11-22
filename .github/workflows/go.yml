@@ -1,0 +1,102 @@
+name: go
+
+on:
+  workflow_call:
+    inputs:
+      go-versions:
+        description: JSON list of Go minor versions to test, lowest first, e.g. '["1.26", "1.27"]'. The first is the go.mod floor.
+        type: string
+        required: true
+      working-directory:
+        description: Folder holding go.mod.
+        type: string
+        default: .
+
+permissions: {}
+
+jobs:
+  go:
+    name: go (${{ matrix.go }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ${{ fromJSON(inputs.go-versions) }}
+    env:
+      GOLANGCI_LINT_VERSION: "2.15.0"
+      GOLANGCI_LINT_SHA256: "9b7fe6a6bf6334b98decf8d86b11415ea7889afdabdd1959fdce23af2a9ebcea"
+      # The floor leg checks changed-line coverage on PRs; the newest leg runs govulncheck.
+      FLOOR: ${{ matrix.go == fromJSON(inputs.go-versions)[0] }}
+      GO_VERSIONS: ${{ inputs.go-versions }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # This workflow's own repo at the SHA the caller pinned, for the tools locked in tools/go.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .central
+          persist-credentials: false
+      # Sets GOTOOLCHAIN=local, so a go.mod `go` line above this leg's version fails instead of
+      # downloading a newer toolchain. The cache is keyed on go.mod too, since a module with no
+      # dependencies has no go.sum; setup-go only hashes files in the workspace, so this runs
+      # before the central checkout moves out.
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5  # v7.1.0
+        with:
+          go-version: ${{ matrix.go }}
+          check-latest: true  # the newest patch, so govulncheck judges the current standard library
+          cache-dependency-path: |
+            ${{ inputs.working-directory }}/go.mod
+            ${{ inputs.working-directory }}/go.sum
+            .central/tools/go/go.sum
+      # Moved out of the workspace so scanners, hooks and ./... never see it.
+      - run: mv .central "$RUNNER_TEMP/central"
+        working-directory: ${{ github.workspace }}
+      - name: Which leg
+        id: leg
+        env:
+          MATRIX_GO: ${{ matrix.go }}
+        run: |
+          newest="$(jq -r 'last' <<<"$GO_VERSIONS")"
+          echo "newest=$([ "$newest" = "$MATRIX_GO" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - name: Install golangci-lint (checksum-verified)
+        run: |
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$RUNNER_TEMP/golangci-lint.tgz" "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz"
+          echo "${GOLANGCI_LINT_SHA256}  $RUNNER_TEMP/golangci-lint.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar -xzf "$RUNNER_TEMP/golangci-lint.tgz" -C "$RUNNER_TEMP/bin" --strip-components=1 "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      # govulncheck and gocover-cobertura, built from tools/go/go.sum with this leg's Go.
+      - name: Build central tools
+        if: steps.leg.outputs.newest == 'true' || (github.event_name == 'pull_request' && env.FLOOR == 'true')
+        run: go build -o "$RUNNER_TEMP/bin/" tool
+        working-directory: ${{ runner.temp }}/central/tools/go
+      - run: golangci-lint fmt --diff
+      - run: golangci-lint run
+      - run: go vet ./...
+      - run: go mod tidy -diff
+      - run: go mod verify
+      - run: go build ./...
+      - run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        if: github.event_name == 'pull_request' && env.FLOOR == 'true'
+      - name: Changed-line coverage ≥ 90%
+        if: github.event_name == 'pull_request' && env.FLOOR == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          gocover-cobertura < coverage.out > coverage.xml
+          uv run --no-build --python "$(cat "$RUNNER_TEMP/central/tools/.python-version")" --project "$RUNNER_TEMP/central/tools" diff-cover coverage.xml --compare-branch="origin/${BASE_REF}" --fail-under=90
+      # Fails only on vulnerable code the module actually calls, standard library included.
+      - name: govulncheck
+        if: steps.leg.outputs.newest == 'true'
+        run: govulncheck ./...

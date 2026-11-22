@@ -8,4 +8,5 @@ target/
 .pytest_cache/
 .ruff_cache/
 coverage.xml
+coverage.out
 .coverage

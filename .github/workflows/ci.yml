@@ -51,6 +51,14 @@ jobs:
     with:
       working-directory: tests/fixtures/rust
 
+  go:
+    uses: $/.github/workflows/go.yml
+    permissions:
+      contents: read
+    with:
+      go-versions: '["1.26", "1.27"]'
+      working-directory: tests/fixtures/go
+
   tools:
     name: tools
     runs-on: ubuntu-latest
@@ -63,6 +71,12 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
       - run: uv lock --check --project tools
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5  # v7.1.0
+        with:
+          go-version-file: tools/go/go.mod
+          cache-dependency-path: tools/go/go.sum
+      - run: go mod tidy -diff && go mod verify
+        working-directory: tools/go
       - run: ./scripts/test_check_merge_gate.sh
 
   # Single required status check. Fails if any job failed or was cancelled.
@@ -75,6 +89,7 @@ jobs:
       - python
       - typescript
       - rust
+      - go
       - tools
     runs-on: ubuntu-latest
     timeout-minutes: 5

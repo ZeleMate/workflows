@@ -10,6 +10,7 @@ Reusable GitHub Actions workflows for CI and security scanning. Repos call them 
 | `python.yml` | uv, Ruff, pyright or mypy, pytest with coverage on each Python version, 90% changed-line coverage on PRs | `python-versions` (required JSON list, lowest first), `type-checker`, `working-directory` |
 | `typescript.yml` | pnpm, Prettier, lint, type check, Vitest with coverage, 90% changed-line coverage on PRs, build | `working-directory`, `node-version` |
 | `rust.yml` | rustfmt, clippy, nextest, doc tests, cargo-deny, on the toolchain in `rust-toolchain.toml` | `working-directory` |
+| `go.yml` | golangci-lint (format check and lint), `go vet`, `go mod tidy -diff` and `go mod verify`, build, `go test -race` with coverage on each Go version, 90% changed-line coverage on PRs on the first (floor) version, govulncheck on the last | `go-versions` (required JSON list, lowest first), `working-directory` |
 | `security.yml` | OSV-Scanner on lockfiles, Gitleaks on full history, and Semgrep when `sast` is true | `sast` |
 
 No workflow takes a secret.
@@ -39,15 +40,18 @@ Keep one merge gate job in the caller (`ci-ok` by default) that `needs` every ot
 - **Python:** `pyproject.toml` and `uv.lock` with Ruff, pytest, pytest-cov and the chosen type checker as dev dependencies.
 - **TypeScript:** `package.json` with a `packageManager` pnpm pin and the scripts `format:check`, `lint`, `typecheck`, `test:coverage` (writing `coverage/cobertura-coverage.xml`) and `build`.
 - **Rust:** `rust-toolchain.toml`, `Cargo.lock` and `deny.toml`.
+- **Go:** `go.mod` (and `go.sum` once it has dependencies) whose `go` line is no newer than the first entry of `go-versions`, and a golangci-lint v2 `.golangci.yml` next to it.
 - **repo-lint:** `.pre-commit-config.yaml`.
 
 ## How the tools are pinned
 
-Semgrep, diff-cover and pre-commit are locked with hashes in `tools/uv.lock`. A workflow that needs them checks this repo out at the SHA the caller pinned (`job.workflow_sha`), so a workflow and its tools always come from one commit. Actions are pinned to commit SHAs. Gitleaks and OSV-Scanner are downloaded by version and verified against a checksum.
+Semgrep, diff-cover and pre-commit are locked with hashes in `tools/uv.lock`, and govulncheck and gocover-cobertura with `tool` directives in `tools/go/go.mod` and `go.sum`. A workflow that needs them checks this repo out at the SHA the caller pinned (`job.workflow_sha`), so a workflow and its tools always come from one commit. Actions are pinned to commit SHAs. Gitleaks, OSV-Scanner and golangci-lint are downloaded by version and verified against a checksum.
+
+golangci-lint can't lint code for a Go newer than the Go it was built with. At each Go release, move its pin in `go.yml` to a build made with the new Go and cut a release before callers raise the newest Go version they test.
 
 ## Testing
 
-This repo's own CI calls every workflow: `repo-lint` and `security` on this repo, and `python`, `typescript` and `rust` on the fixture projects in `tests/fixtures/`, which are renders of the repo template. An action bump or tool change here is therefore tested before it is released.
+This repo's own CI calls every workflow: `repo-lint` and `security` on this repo, and `python`, `typescript`, `rust` and `go` on the fixture projects in `tests/fixtures/`, which are renders of the repo template. An action bump or tool change here is therefore tested before it is released.
 
 ## Releases
 
